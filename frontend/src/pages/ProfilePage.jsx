@@ -1,18 +1,14 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { logout } from "../apicalls/authCalls";
 
 function ProfilePage({userData}) {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = userData.user;
   
   const handleLogout = () => {
-    dispatch({ type: 'LOGOUT' });
-    
-    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    localStorage.removeItem('user');
-    
+    logout()
     navigate('/');
+    window.location.reload();
   };
   
   if (!user) {

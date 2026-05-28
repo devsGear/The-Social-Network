@@ -31,7 +31,7 @@ export const signUp = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hasedPassword = await bcrypt.hash(password, salt);
 
-    const newUser = User.create({
+    const newUser = await User.create({
       name,
       userName,
       email,
@@ -89,4 +89,16 @@ export const signIn = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: "Server Error" });
   }
+};
+
+export const logout = async (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+  });
+
+  res.status(200).json({
+    message: "Logged out successfully",
+  });
 };
