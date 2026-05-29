@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import authRouter from './routes/auth.routes.js';
 import userRouter from './routes/user.routes.js';
+import utilityRouter from './routes/utility.routes.js';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 
@@ -22,6 +23,7 @@ app.use(cors({
 
 app.use('/api/auth' , authRouter)
 app.use('/api/user' , userRouter)
+app.use('/api/utility' , utilityRouter)
 
 app.listen(PORT, () => {
   console.log(`Server is running`);
