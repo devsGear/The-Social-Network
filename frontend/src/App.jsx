@@ -7,6 +7,7 @@ import SignUp from "./pages/SignUp";
 import SignIn from "./pages/SignIn";
 import ForgotPassword from "./pages/ForgotPassword";
 import ProfilePage from "./pages/ProfilePage"
+import CreatePost from "./pages/CreatePost";
 
 import useCurrentUser from "./hooks/useCurrentUser";
 
@@ -42,6 +43,7 @@ function App() {
         element={!userData ? <ForgotPassword /> : <Navigate to="/home" />}
       />
       <Route path="/profile" element={userData ? <ProfilePage userData={userData} /> : <Navigate to="/signin" />} />
+      <Route path="/create-post" element={<CreatePost user={userData?.user} />} />
     </Routes>
   );
 }

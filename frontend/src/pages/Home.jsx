@@ -4,7 +4,7 @@ import FeedCard from '../components/FeedCard';
 import FriendSuggestions from '../components/FriendSuggestions';
 import Stories from '../components/Stories';
 import OnlineFriends from '../components/OnlineFriends';
-import { getFollowingPosts } from '../apicalls/postCalls';
+import { getUserPosts, getFollowingPosts } from '../apicalls/postCalls';
 
 function Home({user}) {
   const [posts, setPosts] = useState([]);
@@ -13,9 +13,14 @@ function Home({user}) {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const data = await getFollowingPosts();
-        // Sort by recent (newest first)
-        const sortedPosts = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        const [userPostsData, followingPostsData] = await Promise.all([
+          getUserPosts(),
+          getFollowingPosts()
+        ]);
+
+        const allPosts = [...(userPostsData || []), ...(followingPostsData || [])];
+        
+        const sortedPosts = allPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setPosts(sortedPosts || []);
       } catch (error) {
         console.error('Failed to fetch posts:', error);
@@ -37,20 +42,16 @@ function Home({user}) {
             <Stories />
           </div>
           
-          {/* Left sidebar - Friend Suggestions */}
           <div className="lg:col-span-3 order-3 lg:order-1">
             <FriendSuggestions />
           </div>
           
-          {/* Main content - Feed */}
           <div className="lg:col-span-6 order-1 lg:order-2">
             <div className="mb-4 font-mono">
-              {/* Stories section */}
               <div className="hidden lg:block">
                 <Stories />
               </div>
               
-              {/* Feed Cards */}
               {loading ? (
                 <p className="text-center py-8">Loading posts...</p>
               ) : posts.length > 0 ? (
@@ -63,7 +64,6 @@ function Home({user}) {
             </div>
           </div>
           
-          {/* Right sidebar - Online Friends */}
           <div className="lg:col-span-3 order-2 lg:order-3">
             <OnlineFriends />
           </div>

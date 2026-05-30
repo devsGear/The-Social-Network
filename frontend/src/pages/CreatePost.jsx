@@ -1,0 +1,139 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import NavBar from '../components/NavBar';
+import { createPost } from '../apicalls/postCalls';
+
+function CreatePost({ user }) {
+  const navigate = useNavigate();
+  const [text, setText] = useState('');
+  const [image, setImage] = useState('');
+  const [imagePreview, setImagePreview] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Convert image to base64
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result);
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!text.trim() && !image) {
+      setError('Please add text or an image');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await createPost(text, image);
+      navigate('/home');
+    } catch (err) {
+      setError(err.message || 'Failed to create post');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    navigate('/home');
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <NavBar name={user.name} />
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        <div className="bg-gray-50 border-2 border-black p-6 font-mono">
+          <h1 className="text-2xl font-bold uppercase border-b-2 border-black pb-4 mb-6">
+            Create Post
+          </h1>
+
+          <form onSubmit={handleSubmit}>
+            {/* Text Area */}
+            <div className="mb-6">
+              <label className="block text-sm font-bold mb-2">What's on your mind?</label>
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="Share your thoughts..."
+                className="w-full p-3 border-2 border-black font-mono text-sm focus:outline-none min-h-32"
+              />
+            </div>
+
+            {/* Image Upload */}
+            <div className="mb-6">
+              <label className="block text-sm font-bold mb-2">Add Image (Optional)</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="block w-full text-sm p-2 border-2 border-black"
+              />
+            </div>
+
+            {/* Image Preview */}
+            {imagePreview && (
+              <div className="mb-6">
+                <p className="text-sm font-bold mb-2">Preview:</p>
+                <div className="border-2 border-black p-2">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-full max-h-96 object-cover"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImage('');
+                    setImagePreview('');
+                  }}
+                  className="mt-2 px-3 py-1 border-2 border-black bg-gray-50 hover:bg-gray-200 text-sm font-bold"
+                >
+                  Remove Image
+                </button>
+              </div>
+            )}
+
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 p-3 border-2 border-red-500 bg-red-50">
+                <p className="text-sm text-red-700 font-bold">{error}</p>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-4">
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 px-4 py-3 border-2 border-black bg-gray-50 hover:bg-gray-200 disabled:bg-gray-300 font-bold uppercase text-sm"
+              >
+                {loading ? 'Publishing...' : 'Publish Post'}
+              </button>
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="flex-1 px-4 py-3 border-2 border-black bg-gray-50 hover:bg-gray-200 font-bold uppercase text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default CreatePost;
