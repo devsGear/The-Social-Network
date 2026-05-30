@@ -1,16 +1,43 @@
 import React, { useState } from "react";
+import FeedComment from "./FeedComment";
+import { likePost, addComment } from "../apicalls/postCalls";
 
 const FeedCard = ({ post }) => {
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(post?.likes?.length || 0);
+  const [loading, setLoading] = useState(false);
+  const [showCommentForm, setShowCommentForm] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [commentLoading, setCommentLoading] = useState(false);
+  const [comments, setComments] = useState(post?.comments || []);
 
-  const handleLike = () => {
-    if (liked) {
-      setLikeCount(likeCount - 1);
-    } else {
-      setLikeCount(likeCount + 1);
+  const handleLike = async () => {
+    setLoading(true);
+    try {
+      const result = await likePost(post._id);
+      setLiked(result.liked);
+      setLikeCount(result.likeCount);
+    } catch (error) {
+      console.error('Error liking post:', error);
+    } finally {
+      setLoading(false);
     }
-    setLiked(!liked);
+  };
+
+  const handleAddComment = async () => {
+    if (!commentText.trim()) return;
+    
+    setCommentLoading(true);
+    try {
+      const newComment = await addComment(post._id, commentText);
+      setComments([...comments, newComment]);
+      setCommentText("");
+      setShowCommentForm(false);
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    } finally {
+      setCommentLoading(false);
+    }
   };
 
   const getTimeAgo = (dateString) => {
@@ -76,26 +103,66 @@ const FeedCard = ({ post }) => {
       {/* Stats */}
       <div className="flex justify-between text-xs sm:text-sm p-2 bg-gray-100 border-b border-black">
         <span className="font-bold">{likeCount} likes</span>
-        <span className="font-bold">{post?.comments?.length || 0} comments</span>
+        <span className="font-bold">{comments?.length || 0} comments</span>
       </div>
+
+      {/* Comments Section */}
+      {comments && comments.length > 0 && (
+        <FeedComment comments={comments} postId={post._id} />
+      )}
 
       {/* Action Buttons */}
       <div className="flex border-t border-black">
         <button
           onClick={handleLike}
-          className={`flex-1 py-1 sm:py-2 text-xs sm:text-sm font-bold ${
+          disabled={loading}
+          className={`flex-1 py-1 sm:py-2 text-xs sm:text-sm font-bold disabled:opacity-50 ${
             liked ? "bg-gray-300" : "bg-gray-50"
           } border-r border-black hover:bg-gray-200`}
         >
           {liked ? "★" : "☆"}
         </button>
-        <button className="flex-1 py-1 sm:py-2 text-xs sm:text-sm font-bold bg-gray-50 border-r border-black hover:bg-gray-200">
+        <button
+          onClick={() => setShowCommentForm(!showCommentForm)}
+          className="flex-1 py-1 sm:py-2 text-xs sm:text-sm font-bold bg-gray-50 border-r border-black hover:bg-gray-200"
+        >
           CMT
         </button>
         <button className="flex-1 py-1 sm:py-2 text-xs sm:text-sm font-bold bg-gray-50 hover:bg-gray-200">
           SHR
         </button>
       </div>
+
+      {/* Comment Form */}
+      {showCommentForm && (
+        <div className="p-3 sm:p-4 border-t border-black bg-gray-100">
+          <textarea
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder="Add a comment..."
+            className="w-full p-2 border-2 border-black text-xs sm:text-sm font-mono resize-none focus:outline-none focus:bg-white"
+            rows="3"
+          />
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={handleAddComment}
+              disabled={commentLoading || !commentText.trim()}
+              className="flex-1 py-2 bg-black text-white text-xs font-bold disabled:opacity-50 hover:bg-gray-800"
+            >
+              {commentLoading ? "Posting..." : "Post"}
+            </button>
+            <button
+              onClick={() => {
+                setShowCommentForm(false);
+                setCommentText("");
+              }}
+              className="flex-1 py-2 bg-gray-300 text-black text-xs font-bold hover:bg-gray-400"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

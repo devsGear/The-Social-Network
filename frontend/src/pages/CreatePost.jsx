@@ -1,26 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NavBar from '../components/NavBar';
-import { createPost } from '../apicalls/postCalls';
+import { createPost, uploadPostImage } from '../apicalls/postCalls';
 
 function CreatePost({ user }) {
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
   const [text, setText] = useState('');
-  const [image, setImage] = useState('');
+  const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Convert image to base64
+      setImageFile(file);
+      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImage(reader.result);
         setImagePreview(reader.result);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -28,14 +38,24 @@ function CreatePost({ user }) {
     e.preventDefault();
     setError('');
 
-    if (!text.trim() && !image) {
+    if (!text.trim() && !imageFile) {
       setError('Please add text or an image');
       return;
     }
 
     setLoading(true);
     try {
-      await createPost(text, image);
+      let imageUrl = '';
+
+      // Upload image to Cloudinary if selected
+      if (imageFile) {
+        setUploading(true);
+        imageUrl = await uploadPostImage(imageFile);
+        setUploading(false);
+      }
+
+      // Create post with Cloudinary URL
+      await createPost(text, imageUrl);
       navigate('/home');
     } catch (err) {
       setError(err.message || 'Failed to create post');
@@ -74,9 +94,11 @@ function CreatePost({ user }) {
             <div className="mb-6">
               <label className="block text-sm font-bold mb-2">Add Image (Optional)</label>
               <input
+                ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 onChange={handleImageChange}
+                disabled={loading || uploading}
                 className="block w-full text-sm p-2 border-2 border-black"
               />
             </div>
@@ -94,11 +116,9 @@ function CreatePost({ user }) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    setImage('');
-                    setImagePreview('');
-                  }}
-                  className="mt-2 px-3 py-1 border-2 border-black bg-gray-50 hover:bg-gray-200 text-sm font-bold"
+                  onClick={handleRemoveImage}
+                  disabled={loading || uploading}
+                  className="mt-2 px-3 py-1 border-2 border-black bg-gray-50 hover:bg-gray-200 disabled:bg-gray-300 text-sm font-bold"
                 >
                   Remove Image
                 </button>
@@ -116,15 +136,16 @@ function CreatePost({ user }) {
             <div className="flex gap-4">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || uploading}
                 className="flex-1 px-4 py-3 border-2 border-black bg-gray-50 hover:bg-gray-200 disabled:bg-gray-300 font-bold uppercase text-sm"
               >
-                {loading ? 'Publishing...' : 'Publish Post'}
+                {uploading ? 'Uploading...' : loading ? 'Publishing...' : 'Publish Post'}
               </button>
               <button
                 type="button"
                 onClick={handleCancel}
-                className="flex-1 px-4 py-3 border-2 border-black bg-gray-50 hover:bg-gray-200 font-bold uppercase text-sm"
+                disabled={loading || uploading}
+                className="flex-1 px-4 py-3 border-2 border-black bg-gray-50 hover:bg-gray-200 disabled:bg-gray-300 font-bold uppercase text-sm"
               >
                 Cancel
               </button>
